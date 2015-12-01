@@ -131,6 +131,10 @@ class MatchUserActivity(object):
             results = self._is_in_activity(self.locations, ac)
             if results:
                 res.append(ac)
+                length_res = len(res)
+                for _ac in res:
+                    _ac['prob'] = '%.3f' % (1.0 / length_res)
+
                 for item in results:
                     if str(item['trace_id']) not in mapped_locations_ids:
                         mapped_locations.append(item)
