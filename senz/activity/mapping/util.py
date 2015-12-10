@@ -16,13 +16,14 @@ from config import MONGODB_HOST, MONGODB_PORT
 from config import DB_NAME, DB_USER, DB_PASSWORD
 from config import DB_USER_LOCATION_TABLE
 from config import DEFAULT_EVENT_NEAR_GEO_POINT, LEANCLOUD_QUERY_LIMIT
-from config import LEANCLOUD_EVENT_TABLE
+from config import LEANCLOUD_EVENT_TABLE, DB_ACTIVITY_TABLE
 
 
 mongo_client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
 db_refinedlog = mongo_client.get_database(DB_NAME)
 db_refinedlog.authenticate(DB_USER, DB_PASSWORD)
 db_location = db_refinedlog.get_collection(DB_USER_LOCATION_TABLE)
+db_activity = db_refinedlog.get_collection(DB_ACTIVITY_TABLE)
 
 
 def get_recent_traces_from_mongodb(user_id, last_days=1):
@@ -117,21 +118,26 @@ def get_date_between_events(start_time, end_time, geo_point=None):
     :param geo_point: input user central location point
     :return:
     """
-    leancloud.init(PARSERHUB_APP_ID, PARSERHUB_APP_KEY)
-    eq = Query(Object.extend(LEANCLOUD_EVENT_TABLE))
+    _find = dict()
     fm_start_time = datetime.fromtimestamp(int(start_time) / 1000)
-    eq.greater_than_or_equal_to('start_time', fm_start_time)
     fm_end_time = datetime.fromtimestamp(int(end_time) / 1000)
-    eq.less_than_or_equal_to('start_time', fm_end_time)
+    _find['start_time'] = {'$gte': fm_start_time}
+    _find['end_time'] = {'$lte': fm_end_time}
+
     max_num = None
     if geo_point:
-        eq.near('location', geo_point)
+        _find['location'] = {
+            '$near': geo_point
+        }
         max_num = DEFAULT_EVENT_NEAR_GEO_POINT
-    find_result = _query_limit(eq, max_num)
+    if max_num:
+        find_result = db_activity.find(_find).limit(max_num)
+    else:
+        find_result = db_activity.find(_find)
     result = []
     for item in find_result:
-        r_item = item.attributes
-        r_item['event_id'] = item.id
+        r_item = item
+        r_item['event_id'] = item['_id']
         result.append(r_item)
     return result
 
@@ -157,7 +163,9 @@ def parse_user_traces(traces):
     return user_traces
 
 
-def save_mapping_results_to_leancloud(user_id, map_result, mapped_locations, mapped_locations_ids):
+def save_mapping_results_to_leancloud(user_id, map_result,
+                                      mapped_locations,
+                                      mapped_locations_ids):
     mapped_locations.sort(lambda x, y: cmp(y['timestamp'], x['timestamp']))
     trace_end_time = mapped_locations[0]['timestamp']
     trace_start_time = mapped_locations[-1]['timestamp']

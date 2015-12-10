@@ -20,6 +20,7 @@ DB_NAME = 'RefinedLog'
 DB_USER = 'senzhub'
 DB_PASSWORD = 'Senz2everyone'
 DB_USER_LOCATION_TABLE = 'UserLocation'
+DB_ACTIVITY_TABLE = 'Events'
 
 ########################
 # constants ############

@@ -29,8 +29,8 @@ class MatchUserActivity(object):
         :return:
         """
         # geo point
-        aty_lng = activity['location'].longitude
-        aty_lat = activity['location'].latitude
+        aty_lng = activity['location']['longitude']
+        aty_lat = activity['location']['latitude']
 
         active_time = []
         active_loc_records = []
@@ -70,7 +70,7 @@ class MatchUserActivity(object):
 
         len_active_time = len(active_time)
 
-        if 0 < len_active_time >= 3:
+        if 3 <= len_active_time:
             active_loc_records.sort(key=lambda x: x["timestamp"])
             min_timestamp = datetime.datetime.fromtimestamp(
                 active_loc_records[0]['timestamp'] / 1000)
@@ -109,12 +109,6 @@ class MatchUserActivity(object):
             trace_list.sort(lambda x, y: cmp(y['timestamp'], x['timestamp']))
             trace_end_time = trace_list[0]['timestamp']
             trace_start_time = trace_list[-1]['timestamp']
-
-            lat_sum = 0.0
-            lng_sum = 0.0
-            for trace in trace_list:
-                lat_sum += trace['location']['latitude']
-                lng_sum += trace['location']['longitude']
 
             activities = self._get_pos_activities(trace_start_time,
                                                   trace_end_time)
