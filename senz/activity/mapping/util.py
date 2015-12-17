@@ -5,25 +5,22 @@ import copy
 import time
 from datetime import datetime
 
-import leancloud
 import pymongo
-from leancloud import Object, Query
 from geopy.distance import vincenty
 
-from config import PARSERHUB_APP_ID, PARSERHUB_APP_KEY
-from config import TIMELINE_APP_ID, TIMELINE_APP_KEY
 from config import MONGODB_HOST, MONGODB_PORT
 from config import DB_NAME, DB_USER, DB_PASSWORD
 from config import DB_USER_LOCATION_TABLE
+from config import DB_USER_ACTIVITY_TABLE
 from config import DEFAULT_EVENT_NEAR_GEO_POINT, LEANCLOUD_QUERY_LIMIT
-from config import LEANCLOUD_EVENT_TABLE, DB_ACTIVITY_TABLE
-
+from config import DB_ACTIVITY_TABLE
 
 mongo_client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
 db_refinedlog = mongo_client.get_database(DB_NAME)
 db_refinedlog.authenticate(DB_USER, DB_PASSWORD)
 db_location = db_refinedlog.get_collection(DB_USER_LOCATION_TABLE)
 db_activity = db_refinedlog.get_collection(DB_ACTIVITY_TABLE)
+db_user_activity = db_refinedlog.get_collection(DB_USER_ACTIVITY_TABLE)
 
 
 def get_recent_traces_from_mongodb(user_id, last_days=1):
@@ -163,31 +160,28 @@ def parse_user_traces(traces):
     return user_traces
 
 
-def save_mapping_results_to_leancloud(user_id, map_result,
-                                      mapped_locations,
-                                      mapped_locations_ids):
+def save_mapping_result_to_mongodb(_id, map_result,
+                                   mapped_locations,
+                                   mapped_locations_ids):
+
     mapped_locations.sort(lambda x, y: cmp(y['timestamp'], x['timestamp']))
     trace_end_time = mapped_locations[0]['timestamp']
     trace_start_time = mapped_locations[-1]['timestamp']
     evidences = []
     for trace_id in mapped_locations_ids:
         evidences.append({'location_id': trace_id})
-
-    # # # # store result to db
-    leancloud.init(TIMELINE_APP_ID, TIMELINE_APP_KEY)
-    MapActivities = Object.extend('UserActivity')
-    map_activities = MapActivities()
-    map_activities.set('user_id', user_id)
-    map_activities.set('time_range_start',
-                       datetime.fromtimestamp(
-                           trace_start_time / 1000))
-    map_activities.set('time_range_end',
-                       datetime.fromtimestamp(
-                           trace_end_time / 1000))
-    map_activities.set('matched_activities', map_result)
-    map_activities.set('is_fake', False)
-    map_activities.set('evidence', evidences)
-    map_activities.save()
+    # # # store result to db
+    map_activities = dict()
+    map_activities['user_id'] = _id
+    map_activities['time_range_start'] = datetime.fromtimestamp(
+        trace_start_time / 1000)
+    map_activities['time_range_end'] = datetime.fromtimestamp(
+        trace_end_time / 1000)
+    map_activities['matched_activities'] = map_result
+    map_activities['is_fake'] = False
+    map_activities['evidence'] = evidences
+    map_activities['create_at'] = datetime.now()
+    db_user_activity.insert_one(map_activities)
 
 
 def distance(lon1, lat1, lon2, lat2):
