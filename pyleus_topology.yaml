@@ -1,0 +1,69 @@
+# This topology monitor the traffic volume generated per IP
+# address in a certain time window, based on an Apache HTTP server
+# access log. The traffic volume is shown only if it is greater than a
+# threshold specified as an option, as well as the time window size.
+# The result is updated every 2 seconds, while statistics each second.
+
+name: user_activity_mapping
+workers: 2
+
+
+topology:
+    - spout:
+        name: kafka_user_activity_mapping
+        type: kafka
+        options:
+            #module: streaming_topology.user_behavior_spout
+            # The Kafka topic to stream from.
+            # Required.
+            topic: location
+
+            # ZooKeeper connection string. Comma-separated list of ZooKeeper
+            # servers.
+            # Required.
+            zk_hosts: 119.254.111.40:2181/kafka/q-63lnrnga
+
+            # Root path in ZooKeeper to store consumer offsets.
+            # Defaults to: /pyleus-kafka-offsets/<topology name>
+            zk_root: /pyleus-kafka-offsets/streaming_topology
+
+            # Kafka consumer ID.
+            # Defaults to: pyleus-<topology name>
+            consumer_id: pyleus-Streaming_Topology
+
+            # Whether the initial offset should be that specified by
+            # start_offset_time (true) or the head of the stream (false).
+            # Defaults to false.
+            from_start: false
+
+            # The offset time to start with if from_start is true.
+            # Defaults to the earliest offset time in the stream.
+            start_offset_time: 1398971060
+
+            # support binary data like google protobuf
+            binary_data: true
+
+    - bolt:
+        name: user_trace_bolt
+        module: user_activity_mapping.user_possible_activity
+        groupings:
+            - shuffle_grouping:
+                component: kafka_user_activity_mapping
+
+    - bolt:
+        name: mapping_user_possible_activity
+        module: user_activity_mapping.mapping_user_possible_activity
+        groupings:
+            - fields_grouping:
+                component: MupaBolt
+                fields:
+                    - user_id
+
+    - bolt:
+        name: save_mapped_to_db
+        module: user_activity_mapping.save_mapped_to_db
+        groupings:
+            - fields_grouping:
+                component: SmtdBolt
+                fields:
+                    - user_id
