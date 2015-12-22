@@ -23,19 +23,19 @@ senz user activities mapping service
 ### 4. see log files
 You can new three terminals and see all log files.
 
-terminal1 :
+- terminal1 :
 
 ```sh
     $ tail -F /tmp/user_possible_activity.log
 ```
 
-terminal2 :
+- terminal2 :
 
 ```sh
     $ tail -F /tmp/mapping_user_possible_activity.log
 ```
 
-terminal3 :
+- terminal3 :
 
 ```sh
     $ tail -F /tmp/save_mapped_result_to_db.log
