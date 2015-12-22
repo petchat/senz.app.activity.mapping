@@ -11,7 +11,7 @@ from user_activity_mapping.session import user_activity_session
 from user_activity_mapping.util import check_user_activities_exists
 
 
-log = logging.getLogger('user_possible_activity')
+log = logging.getLogger('mapping_user_possible_activity')
 
 
 class MupaBolt(SimpleBolt):
@@ -55,7 +55,7 @@ class MupaBolt(SimpleBolt):
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.DEBUG,
-        filename='/tmp/user_possible_activity.log',
+        filename='/tmp/mapping_user_possible_activity.log',
         filemode='a',
     )
 
