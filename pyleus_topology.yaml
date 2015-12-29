@@ -55,7 +55,7 @@ topology:
         module: user_activity_mapping.mapping_user_possible_activity
         groupings:
             - fields_grouping:
-                component: MupaBolt
+                component: user_trace_bolt
                 fields:
                     - user_id
 
@@ -64,6 +64,6 @@ topology:
         module: user_activity_mapping.save_mapped_to_db
         groupings:
             - fields_grouping:
-                component: SmtdBolt
+                component: mapping_user_possible_activity
                 fields:
                     - user_id
